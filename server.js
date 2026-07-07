@@ -191,20 +191,20 @@ function analyzeHash(hash) {
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
     bot.sendMessage(chatId, 
-        `👑 *S2KING-PREMIUM - SIÊU PREDICTOR*\n\n` +
-        `🔥 *Phân tích MD5/SHA256 siêu táo bạo*\n` +
-        `🎯 *Dự đoán Tài/Xỉu với độ chính xác tối đa*\n\n` +
+        `👑 *S2KING-PREMIUM*\n\n` +
+        `🔥 *chỉ nhận mã md5 và SAH256 thôi tk óc cặc*\n` +
+        `🎯 *Dự đoán ko an 100% *\n\n` +
         `📌 *Cách sử dụng:*\n` +
-        `🔹 /predict <MD5_hash> - Phân tích hash MD5\n` +
-        `🔹 /predict <SHA256_hash> - Phân tích hash SHA256\n` +
-        `🔹 /taixiu <hash> - Dự đoán Tài/Xỉu từ hash\n\n` +
-        `💎 *S2KING-PREMIUM v3.0*`,
+        `🔹 /hash <MD5_hash> - Phân tích hash MD5\n` +
+        `🔹 /hash <SHA256_hash> - Phân tích hash SHA256\n` +
+        `🔹 /random <hash> - Dự đoán Tài/Xỉu từ hash\n\n` +
+        `💎 *S2KING-PREMIUM v1.0*`,
         { parse_mode: 'Markdown' }
     );
 });
 
 // Lệnh dự đoán từ hash
-bot.onText(/\/predict (.+)/, (msg, match) => {
+bot.onText(/\/hash (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     const hash = match[1].trim().toLowerCase();
     
@@ -228,7 +228,7 @@ bot.onText(/\/predict (.+)/, (msg, match) => {
 });
 
 // Lệnh tài xỉu
-bot.onText(/\/taixiu (.+)/, (msg, match) => {
+bot.onText(/\/random (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
     const hash = match[1].trim().toLowerCase();
     
@@ -247,7 +247,7 @@ bot.onText(/\/taixiu (.+)/, (msg, match) => {
         return;
     }
     
-    const response = `🎰 *DỰ ĐOÁN TÀI/XỈU*\n\n` +
+    const response = `🎰 *DỰ ĐOÁN*\n\n` +
         `${result.result === 'TÀI' ? '🔴' : '🔵'} *Kết quả*: ${result.result}\n` +
         `📊 *Độ tin cậy*: ${result.confidence}%\n` +
         `🔢 *Loại hash*: ${result.hashType}\n` +
@@ -261,14 +261,14 @@ bot.onText(/\/taixiu (.+)/, (msg, match) => {
 app.get('/', (req, res) => {
     res.json({
         name: 'S2KING-PREMIUM',
-        version: '3.0.0',
+        version: '1.0.0',
         status: '🚀 ACTIVE',
-        features: ['MD5 Analysis', 'SHA256 Analysis', 'Tài/Xỉu Predictor']
+        features: ['MD5', 'SHA256', 'Premium']
     });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
     console.log('👑 S2KING-PREMIUM ONLINE!');
     console.log(`🚀 Port: ${PORT}`);
-    console.log('🔥 Siêu Predictor đã sẵn sàng!');
+    console.log('🔥 Siêu Premium đã sẵn sàng!');
 });
