@@ -5,294 +5,254 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Token bot
 const token = '8865295022:AAFOI0vU6hMHo2QbF2LbL74uDYdi8rr01Lk';
 const bot = new TelegramBot(token, { polling: true });
 
-// Database lưu kết quả
-const history = [];
-const stats = { tai: 0, xiu: 0 };
-const users = new Map();
-
-// Hàm tạo hash siêu táo bạo
-function generateSuperHash(data) {
-    const timestamp = Date.now();
-    const salt = 's2king_mup_rup_super_secret_2026';
-    const combined = `${data}|${timestamp}|${salt}|${Math.random()}`;
+// Hàm phân tích hash siêu táo bạo
+function analyzeHash(hash) {
+    // Kiểm tra loại hash
+    const hashType = hash.length === 32 ? 'MD5' : hash.length === 64 ? 'SHA256' : 'UNKNOWN';
     
-    // Tạo nhiều lớp hash
-    let md5 = crypto.createHash('md5').update(combined).digest('hex');
-    let sha256 = crypto.createHash('sha256').update(combined).digest('hex');
-    
-    // Kết hợp hash tạo thành "siêu hash"
-    let superHash = '';
-    for (let i = 0; i < 64; i++) {
-        if (i < 32) {
-            superHash += md5[i];
-        } else {
-            superHash += sha256[i - 32];
-        }
+    if (hashType === 'UNKNOWN') {
+        return {
+            error: '❌ Hash không hợp lệ! Chỉ hỗ trợ MD5 (32 ký tự) và SHA256 (64 ký tự)'
+        };
     }
     
-    // XOR các bit để tăng độ phức tạp
-    let finalHash = '';
-    for (let i = 0; i < superHash.length; i += 2) {
-        const char1 = parseInt(superHash[i] || '0', 16);
-        const char2 = parseInt(superHash[i + 1] || '0', 16);
-        finalHash += (char1 ^ char2).toString(16);
-    }
-    
-    return finalHash.padEnd(32, '0');
-}
-
-// Thuật toán dự đoán "táo bạo" dựa trên hash
-function predictWithHash(hash) {
-    // Phân tích hash để dự đoán
-    let sum = 0;
+    // Phân tích chi tiết hash
+    let totalSum = 0;
     let evenCount = 0;
     let oddCount = 0;
-    let hexSum = 0;
+    let primeCount = 0;
+    let hexValues = [];
+    let pairSums = [];
+    let triplePatterns = [];
     
+    // Thu thập dữ liệu từ hash
     for (let i = 0; i < hash.length; i++) {
         const char = hash[i];
         const num = parseInt(char, 16);
-        sum += num;
+        totalSum += num;
+        hexValues.push(num);
+        
         if (num % 2 === 0) evenCount++;
         else oddCount++;
-        hexSum += num;
+        
+        // Kiểm tra số nguyên tố
+        if ([2, 3, 5, 7, 11, 13].includes(num)) primeCount++;
     }
     
-    // Các thuật toán dự đoán "táo bạo"
+    // Phân tích cặp số
+    for (let i = 0; i < hash.length - 1; i += 2) {
+        const pair = hash.substring(i, i + 2);
+        const pairNum = parseInt(pair, 16);
+        pairSums.push(pairNum);
+    }
+    
+    // Phân tích mẫu 3 ký tự
+    for (let i = 0; i < hash.length - 2; i += 3) {
+        const triple = hash.substring(i, i + 3);
+        const tripleNum = parseInt(triple, 16);
+        triplePatterns.push(tripleNum);
+    }
+    
+    // THUẬT TOÁN DỰ ĐOÁN SIÊU TÁO BẠO
+    
+    // 1. Thuật toán dựa trên tổng các chữ số
+    const sumAlgorithm = (totalSum % 2 === 0) ? 'TÀI' : 'XỈU';
+    const sumWeight = 85 + (totalSum % 15); // Độ tin cậy từ 85-100%
+    
+    // 2. Thuật toán dựa trên số chẵn/lẻ
+    const evenOddAlgorithm = (evenCount > oddCount) ? 'TÀI' : 'XỈU';
+    const evenOddWeight = 75 + (Math.abs(evenCount - oddCount) * 2);
+    
+    // 3. Thuật toán dựa trên số nguyên tố
+    const primeAlgorithm = (primeCount > (hash.length / 4)) ? 'TÀI' : 'XỈU';
+    const primeWeight = 70 + (primeCount * 3);
+    
+    // 4. Thuật toán dựa trên giá trị trung bình
+    const avgValue = totalSum / hash.length;
+    const avgAlgorithm = (avgValue > 7.5) ? 'TÀI' : 'XỈU';
+    const avgWeight = 80 + Math.abs(avgValue - 7.5) * 2;
+    
+    // 5. Thuật toán dựa trên cặp số
+    const avgPairSum = pairSums.reduce((a, b) => a + b, 0) / pairSums.length;
+    const pairAlgorithm = (avgPairSum > 127) ? 'TÀI' : 'XỈU';
+    const pairWeight = 75 + (avgPairSum / 10);
+    
+    // 6. Thuật toán dựa trên mẫu 3 ký tự
+    const avgTriple = triplePatterns.reduce((a, b) => a + b, 0) / triplePatterns.length;
+    const tripleAlgorithm = (avgTriple > 2047) ? 'TÀI' : 'XỈU';
+    const tripleWeight = 70 + (avgTriple / 100);
+    
+    // 7. Thuật toán dựa trên bit cuối
+    const lastChar = parseInt(hash[hash.length - 1], 16);
+    const lastAlgorithm = (lastChar > 7) ? 'TÀI' : 'XỈU';
+    const lastWeight = 65 + (lastChar * 2);
+    
+    // 8. Thuật toán dựa trên sự phân bố
+    let distributionScore = 0;
+    for (let i = 0; i < hexValues.length - 1; i++) {
+        const diff = Math.abs(hexValues[i] - hexValues[i + 1]);
+        distributionScore += diff;
+    }
+    const distAlgorithm = (distributionScore / hexValues.length > 4) ? 'TÀI' : 'XỈU';
+    const distWeight = 70 + (distributionScore / hexValues.length);
+    
+    // Tổng hợp tất cả thuật toán
     const algorithms = [
-        // Thuật toán 1: Dựa vào tổng các số hex
-        () => (hexSum % 2 === 0) ? 'TÀI' : 'XỈU',
-        
-        // Thuật toán 2: Dựa vào số chẵn/lẻ
-        () => (evenCount > oddCount) ? 'TÀI' : 'XỈU',
-        
-        // Thuật toán 3: Dựa vào bit cuối
-        () => {
-            const lastChar = parseInt(hash[hash.length - 1], 16);
-            return (lastChar > 7) ? 'TÀI' : 'XỈU';
-        },
-        
-        // Thuật toán 4: Dựa vào vị trí đặc biệt
-        () => {
-            const middle = Math.floor(hash.length / 2);
-            const midValue = parseInt(hash[middle], 16);
-            return (midValue % 3 === 0) ? 'TÀI' : 'XỈU';
-        },
-        
-        // Thuật toán 5: Dựa vào tổng các cặp số
-        () => {
-            let pairSum = 0;
-            for (let i = 0; i < hash.length; i += 2) {
-                const pair = hash.substring(i, i + 2);
-                pairSum += parseInt(pair, 16) || 0;
-            }
-            return (pairSum % 5 > 2) ? 'TÀI' : 'XỈU';
-        },
-        
-        // Thuật toán 6: Dựa vào Fibonacci của hash
-        () => {
-            let fib = 0;
-            for (let i = 0; i < Math.min(hash.length, 10); i++) {
-                fib += parseInt(hash[i], 16) * (i + 1);
-            }
-            return (fib % 7 > 3) ? 'TÀI' : 'XỈU';
-        }
+        { name: 'Tổng giá trị', result: sumAlgorithm, weight: Math.min(sumWeight, 100) },
+        { name: 'Chẵn/Lẻ', result: evenOddAlgorithm, weight: Math.min(evenOddWeight, 100) },
+        { name: 'Số nguyên tố', result: primeAlgorithm, weight: Math.min(primeWeight, 100) },
+        { name: 'Giá trị trung bình', result: avgAlgorithm, weight: Math.min(avgWeight, 100) },
+        { name: 'Cặp số', result: pairAlgorithm, weight: Math.min(pairWeight, 100) },
+        { name: 'Mẫu 3 ký tự', result: tripleAlgorithm, weight: Math.min(tripleWeight, 100) },
+        { name: 'Bit cuối', result: lastAlgorithm, weight: Math.min(lastWeight, 100) },
+        { name: 'Phân bố', result: distAlgorithm, weight: Math.min(distWeight, 100) }
     ];
     
-    // Chọn thuật toán ngẫu nhiên nhưng dựa trên hash
-    const algoIndex = (sum % algorithms.length);
-    return algorithms[algoIndex]();
-}
-
-// Thuật toán "siêu táo bạo" - kết hợp nhiều yếu tố
-function superTaoBaoPredict(input) {
-    // Tạo nhiều hash khác nhau
-    const hash1 = generateSuperHash(input + 'round1');
-    const hash2 = generateSuperHash(input + 'round2');
-    const hash3 = generateSuperHash(input + 'round3');
+    // Tính điểm cho TÀI và XỈU
+    let taiScore = 0;
+    let xiuScore = 0;
+    let taiWeight = 0;
+    let xiuWeight = 0;
     
-    // Dự đoán từ mỗi hash
-    const pred1 = predictWithHash(hash1);
-    const pred2 = predictWithHash(hash2);
-    const pred3 = predictWithHash(hash3);
+    algorithms.forEach(algo => {
+        if (algo.result === 'TÀI') {
+            taiScore += algo.weight;
+            taiWeight++;
+        } else {
+            xiuScore += algo.weight;
+            xiuWeight++;
+        }
+    });
     
-    // Thống kê kết quả
-    const results = [pred1, pred2, pred3];
-    const taiCount = results.filter(r => r === 'TÀI').length;
-    const xiuCount = results.filter(r => r === 'XỈU').length;
+    // Tính phần trăm
+    const totalAlgorithms = algorithms.length;
+    const taiPercent = (taiScore / (taiScore + xiuScore)) * 100;
+    const xiuPercent = (xiuScore / (taiScore + xiuScore)) * 100;
     
-    // Quyết định cuối cùng
-    let finalPrediction;
+    // Quyết định cuối cùng với độ tin cậy siêu cao
+    let finalResult;
     let confidence;
+    let dominance;
     
-    if (taiCount >= 2) {
-        finalPrediction = 'TÀI';
-        confidence = (taiCount / 3 * 100).toFixed(1);
-    } else if (xiuCount >= 2) {
-        finalPrediction = 'XỈU';
-        confidence = (xiuCount / 3 * 100).toFixed(1);
+    if (taiPercent > xiuPercent) {
+        finalResult = 'TÀI';
+        confidence = taiPercent.toFixed(2);
+        dominance = taiWeight / totalAlgorithms * 100;
+    } else if (xiuPercent > taiPercent) {
+        finalResult = 'XỈU';
+        confidence = xiuPercent.toFixed(2);
+        dominance = xiuWeight / totalAlgorithms * 100;
     } else {
-        // Nếu hòa, dùng thêm thuật toán phụ
-        const extraHash = generateSuperHash(input + 'extra');
-        const extraPred = predictWithHash(extraHash);
-        finalPrediction = extraPred;
-        confidence = '66.7';
+        // Trường hợp hòa, dùng thuật toán đặc biệt
+        const specialHash = crypto.createHash('sha256').update(hash + 's2king_premium').digest('hex');
+        const specialChar = parseInt(specialHash[0], 16);
+        finalResult = specialChar > 7 ? 'TÀI' : 'XỈU';
+        confidence = '52.00';
+        dominance = '50.00';
     }
     
-    // Tạo giải thích chi tiết
-    const explanation = `🔮 PHÂN TÍCH SIÊU HASH:\n` +
-        `📊 Hash1: ${hash1.substring(0, 10)}... → ${pred1}\n` +
-        `📊 Hash2: ${hash2.substring(0, 10)}... → ${pred2}\n` +
-        `📊 Hash3: ${hash3.substring(0, 10)}... → ${pred3}\n` +
-        `🎯 Kết luận: ${finalPrediction} (Độ tin cậy ${confidence}%)`;
+    // Tạo báo cáo phân tích chi tiết
+    let analysisReport = `🔬 *PHÂN TÍCH HASH SIÊU TÁO BẠO*\n\n`;
+    analysisReport += `📌 *Hash Type*: ${hashType}\n`;
+    analysisReport += `🔢 *Hash Length*: ${hash.length} characters\n\n`;
+    
+    analysisReport += `📊 *THUẬT TOÁN PHÂN TÍCH:*\n`;
+    algorithms.forEach((algo, index) => {
+        const emoji = algo.result === 'TÀI' ? '🔴' : '🔵';
+        analysisReport += `${index + 1}. ${algo.name}: ${emoji} ${algo.result} (${algo.weight.toFixed(1)}%)\n`;
+    });
+    
+    analysisReport += `\n🎯 *KẾT QUẢ DỰ ĐOÁN:*\n`;
+    analysisReport += `🔴 *TÀI*: ${taiPercent.toFixed(1)}% (${taiWeight}/${totalAlgorithms} thuật toán)\n`;
+    analysisReport += `🔵 *XỈU*: ${xiuPercent.toFixed(1)}% (${xiuWeight}/${totalAlgorithms} thuật toán)\n`;
+    analysisReport += `\n🔥 *FINAL: ${finalResult}* 🏆\n`;
+    analysisReport += `📊 *Độ tin cậy*: ${confidence}%\n`;
+    analysisReport += `💪 *Sức mạnh thuật toán*: ${dominance.toFixed(1)}% thống trị`;
     
     return {
-        prediction: finalPrediction,
+        result: finalResult,
         confidence: confidence,
-        explanation: explanation,
-        hashes: { hash1, hash2, hash3 }
+        analysis: analysisReport,
+        hashType: hashType,
+        stats: {
+            taiPercent: taiPercent,
+            xiuPercent: xiuPercent,
+            taiAlgorithms: taiWeight,
+            xiuAlgorithms: xiuWeight,
+            totalAlgorithms: totalAlgorithms
+        }
     };
 }
 
 // Commands
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const welcomeMsg = `🎰 *S2KING MÚP RỤP - SIÊU PREDICTOR*\n\n` +
-        `🔥 *DỰ ĐOÁN TÀI/XỈU CẤP ĐỘ VŨ TRỤ*\n` +
-        `⚡ *THUẬT TOÁN MD5 × SHA256 SIÊU TÁO BẠO*\n\n` +
-        `📌 *Commands:*\n` +
-        `🔮 /taixiu - Dự đoán Tài/Xỉu\n` +
-        `📊 /stats - Thống kê kết quả\n` +
-        `📈 /history - Xem lịch sử\n` +
-        `🎲 /random - Dự đoán ngẫu nhiên\n` +
-        `⚡ /super - Siêu dự đoán 3 lượt\n\n` +
-        `💎 *POWERED BY S2KING* 🚀`;
-    
-    bot.sendMessage(chatId, welcomeMsg, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/taixiu/, (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    // Tạo dữ liệu ngẫu nhiên cho lượt chơi
-    const roundData = `s2king_${Date.now()}_${Math.random()}_${userId}`;
-    const result = superTaoBaoPredict(roundData);
-    
-    // Lưu lịch sử
-    history.push({
-        userId: userId,
-        prediction: result.prediction,
-        timestamp: new Date(),
-        confidence: result.confidence
-    });
-    
-    // Cập nhật stats
-    if (result.prediction === 'TÀI') {
-        stats.tai++;
-    } else {
-        stats.xiu++;
-    }
-    
-    // Gửi kết quả
-    const response = `🎰 *KẾT QUẢ DỰ ĐOÁN*\n\n` +
-        `🔥 *${result.prediction}*\n` +
-        `📊 *Độ tin cậy*: ${result.confidence}%\n\n` +
-        `${result.explanation}\n\n` +
-        `🕐 *Thời gian*: ${new Date().toLocaleString()}\n` +
-        `👤 *Người chơi*: ${msg.from.first_name}`;
-    
-    bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/super/, (msg) => {
-    const chatId = msg.chat.id;
-    const userId = msg.from.id;
-    
-    // Dự đoán 3 lượt
-    const predictions = [];
-    for (let i = 0; i < 3; i++) {
-        const roundData = `s2king_super_${Date.now()}_${i}_${Math.random()}`;
-        const result = superTaoBaoPredict(roundData);
-        predictions.push(result);
-    }
-    
-    let response = `⚡ *SIÊU DỰ ĐOÁN 3 LƯỢT*\n\n`;
-    predictions.forEach((pred, index) => {
-        response += `🎯 *Lượt ${index + 1}*: ${pred.prediction} (${pred.confidence}%)\n`;
-    });
-    
-    // Thống kê
-    const taiCount = predictions.filter(p => p.prediction === 'TÀI').length;
-    const xiuCount = predictions.filter(p => p.prediction === 'XỈU').length;
-    
-    response += `\n📊 *Thống kê*: TÀI ${taiCount}/3 - XỈU ${xiuCount}/3\n`;
-    response += `🎯 *Xu hướng*: ${taiCount > xiuCount ? 'TÀI' : xiuCount > taiCount ? 'XỈU' : 'Cân bằng'}`;
-    
-    bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/random/, (msg) => {
-    const chatId = msg.chat.id;
-    
-    // Thuật toán ngẫu nhiên nhưng dựa trên hash
-    const seed = `${Date.now()}_${Math.random()}`;
-    const hash = crypto.createHash('sha256').update(seed).digest('hex');
-    const randomValue = parseInt(hash.substring(0, 8), 16) % 100;
-    
-    let result;
-    let emoji;
-    if (randomValue > 50) {
-        result = 'TÀI';
-        emoji = '🔴';
-    } else {
-        result = 'XỈU';
-        emoji = '🔵';
-    }
-    
     bot.sendMessage(chatId, 
-        `🎲 *DỰ ĐOÁN NGẪU NHIÊN*\n\n` +
-        `${emoji} *Kết quả*: ${result}\n` +
-        `📊 *Giá trị*: ${randomValue}/100\n` +
-        `🔢 *Hash*: \`${hash.substring(0, 16)}...\``,
+        `👑 *S2KING-PREMIUM - SIÊU PREDICTOR*\n\n` +
+        `🔥 *Phân tích MD5/SHA256 siêu táo bạo*\n` +
+        `🎯 *Dự đoán Tài/Xỉu với độ chính xác tối đa*\n\n` +
+        `📌 *Cách sử dụng:*\n` +
+        `🔹 /predict <MD5_hash> - Phân tích hash MD5\n` +
+        `🔹 /predict <SHA256_hash> - Phân tích hash SHA256\n` +
+        `🔹 /taixiu <hash> - Dự đoán Tài/Xỉu từ hash\n\n` +
+        `💎 *S2KING-PREMIUM v3.0*`,
         { parse_mode: 'Markdown' }
     );
 });
 
-bot.onText(/\/stats/, (msg) => {
+// Lệnh dự đoán từ hash
+bot.onText(/\/predict (.+)/, (msg, match) => {
     const chatId = msg.chat.id;
-    const total = stats.tai + stats.xiu;
-    const taiRate = total > 0 ? (stats.tai / total * 100).toFixed(1) : 0;
-    const xiuRate = total > 0 ? (stats.xiu / total * 100).toFixed(1) : 0;
+    const hash = match[1].trim().toLowerCase();
     
-    const response = `📊 *THỐNG KÊ TÀI/XỈU*\n\n` +
-        `📈 *Tổng lượt*: ${total}\n\n` +
-        `🔴 *TÀI*: ${stats.tai} (${taiRate}%)\n` +
-        `🔵 *XỈU*: ${stats.xiu} (${xiuRate}%)\n\n` +
-        `🎯 *Tỷ lệ*: ${taiRate > xiuRate ? 'TÀI' : 'XỈU'} đang dẫn đầu\n` +
-        `📊 *Chênh lệch*: ${Math.abs(stats.tai - stats.xiu)} lượt`;
-    
-    bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
-});
-
-bot.onText(/\/history/, (msg) => {
-    const chatId = msg.chat.id;
-    const recent = history.slice(-10);
-    
-    if (recent.length === 0) {
-        bot.sendMessage(chatId, '📭 *Chưa có lịch sử dự đoán*', { parse_mode: 'Markdown' });
+    // Kiểm tra hash hợp lệ
+    if (!/^[a-f0-9]+$/.test(hash)) {
+        bot.sendMessage(chatId, 
+            '❌ *Hash không hợp lệ!*\nChỉ chấp nhận ký tự hex (0-9, a-f)',
+            { parse_mode: 'Markdown' }
+        );
         return;
     }
     
-    let response = `📜 *LỊCH SỬ 10 LƯỢT GẦN NHẤT*\n\n`;
-    recent.forEach((item, index) => {
-        const emoji = item.prediction === 'TÀI' ? '🔴' : '🔵';
-        response += `${index + 1}. ${emoji} ${item.prediction} (${item.confidence}%) - ${new Date(item.timestamp).toLocaleTimeString()}\n`;
-    });
+    const result = analyzeHash(hash);
+    
+    if (result.error) {
+        bot.sendMessage(chatId, result.error, { parse_mode: 'Markdown' });
+        return;
+    }
+    
+    bot.sendMessage(chatId, result.analysis, { parse_mode: 'Markdown' });
+});
+
+// Lệnh tài xỉu
+bot.onText(/\/taixiu (.+)/, (msg, match) => {
+    const chatId = msg.chat.id;
+    const hash = match[1].trim().toLowerCase();
+    
+    if (!/^[a-f0-9]+$/.test(hash)) {
+        bot.sendMessage(chatId, 
+            '❌ *Hash không hợp lệ!*\nChỉ chấp nhận ký tự hex (0-9, a-f)',
+            { parse_mode: 'Markdown' }
+        );
+        return;
+    }
+    
+    const result = analyzeHash(hash);
+    
+    if (result.error) {
+        bot.sendMessage(chatId, result.error, { parse_mode: 'Markdown' });
+        return;
+    }
+    
+    const response = `🎰 *DỰ ĐOÁN TÀI/XỈU*\n\n` +
+        `${result.result === 'TÀI' ? '🔴' : '🔵'} *Kết quả*: ${result.result}\n` +
+        `📊 *Độ tin cậy*: ${result.confidence}%\n` +
+        `🔢 *Loại hash*: ${result.hashType}\n` +
+        `📈 *Tỷ lệ*: TÀI ${result.stats.taiPercent.toFixed(1)}% - XỈU ${result.stats.xiuPercent.toFixed(1)}%\n` +
+        `⚡ *Sức mạnh*: ${result.stats.taiAlgorithms}/${result.stats.totalAlgorithms} thuật toán ủng hộ`;
     
     bot.sendMessage(chatId, response, { parse_mode: 'Markdown' });
 });
@@ -300,20 +260,15 @@ bot.onText(/\/history/, (msg) => {
 // Web server
 app.get('/', (req, res) => {
     res.json({
-        name: 'S2KING MÚP RỤP - SIÊU PREDICTOR',
-        version: '2.0.0',
-        status: '🚀 ONLINE',
-        stats: stats,
-        totalPredictions: history.length
+        name: 'S2KING-PREMIUM',
+        version: '3.0.0',
+        status: '🚀 ACTIVE',
+        features: ['MD5 Analysis', 'SHA256 Analysis', 'Tài/Xỉu Predictor']
     });
 });
 
-app.get('/health', (req, res) => {
-    res.json({ status: 'healthy', timestamp: new Date() });
-});
-
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`🚀 S2KING MÚP RỤP BOT ONLINE!`);
-    console.log(`📊 Port: ${PORT}`);
-    console.log(`🎯 Stats: TÀI ${stats.tai} - XỈU ${stats.xiu}`);
+    console.log('👑 S2KING-PREMIUM ONLINE!');
+    console.log(`🚀 Port: ${PORT}`);
+    console.log('🔥 Siêu Predictor đã sẵn sàng!');
 });

@@ -1,7 +1,7 @@
 {
-  "name": "s2king-predictor-bot",
-  "version": "2.0.0",
-  "description": "S2KING MÚP RỤP - Siêu Predictor Tài/Xỉu với thuật toán hash táo bạo",
+  "name": "s2king-premium-bot",
+  "version": "3.0.0",
+  "description": "S2KING-PREMIUM - Siêu Predictor Tài/Xỉu từ MD5/SHA256",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
